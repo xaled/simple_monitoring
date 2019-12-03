@@ -1,5 +1,11 @@
-import time, json
+#!/usr/bin/python3
+import time
+import json
+import logging
+logger = logging.getLogger(__name__)
+from urllib.parse import urlencode
 
+# SAMPLE_CONFIG = {'general': ['system_info', 'drives_info', 'memory_info']}  # Minimum config
 SAMPLE_CONFIG = {
     'general': ['system_info', 'drives_info', 'memory_info', 'network_info'],
     'dir_size': ['/var/www'],
@@ -24,6 +30,10 @@ SAMPLE_CONFIG = {
         }
     ]
 }
+JSON_OUTPUT = "monitor.out"
+LOGS_OUTPUT = "monitor.log"
+logging.basicConfig(level=logging.INFO, filename=LOGS_OUTPUT, filemode='w',
+                    format='%(asctime)s %(levelname)s %(message)s')
 
 
 def get_command_output(command_vector):
@@ -111,7 +121,7 @@ def network_info():
                 'address': snic.address,
                 'netmask': snic.netmask,
             })
-        nics.append({
+        interfaces.append({
             'interface': interface,
             'snics': snics
         })
@@ -135,42 +145,71 @@ def main(config=None):
     # General System Info
     if 'general' in config:
         for info in config['general']:
-            if info == 'system_info':
-                res['system_info'] = system_info()
-            elif info == 'drives_info':
-                res['drives'] = drives_info()
-            elif info == 'memory_info':
-                res['memory'] = memory_info()
-            elif info == 'network_info':
-                res['network']: network_info()
+            try:
+                if info == 'system_info':
+                    res['system_info'] = system_info()
+                elif info == 'drives_info':
+                    res['drives'] = drives_info()
+                elif info == 'memory_info':
+                    res['memory'] = memory_info()
+                elif info == 'network_info':
+                    res['network'] = network_info()
+            except:
+                logger.error("Error while trying to get general info: %s", urlencode({'info': info}),
+                             exc_info=True)
 
     # Directory Sizes:
     if 'dir_size' in config:
         res['dir_sizes'] = {}
         for dir in config['dir_size']:
-            res['dir_sizes'][dir] = dir_size(dir)
+            try:
+                res['dir_sizes'][dir] = dir_size(dir)
+            except:
+                logger.error("Error while trying to determine directory size: %s", urlencode({'dir':dir}), exc_info=True)
 
     # Command outputs
     if 'command_output' in config:
-        res['command_outputs'] = {}
+        res['command_outputs'] = []
         for obj in config['command_output']:
-            res['command_outputs'][obj['name']] = get_command_output(obj['command_vector'])
+            try:
+                res['command_outputs'].append(
+                    {
+                        "name": obj['name'],
+                        "output": get_command_output(obj['command_vector'])
+                    }
+                )
+            except:
+                logger.error("Error while trying to get command_output: %s", urlencode(obj),
+                             exc_info=True)
+
 
     # Command Outputs Match
     if 'regex_match_command_output' in config:
-        res['regex_match_command_output'] = {}
+        res['regex_match_command_output'] = []
         for obj in config['regex_match_command_output']:
-            res['regex_match_command_output'][obj['name']] = regex_match_command_output(obj['command_vector'],
-                                                                                        obj['pattern'])
+            try:
+                res['regex_match_command_output'].append({
+                    "name": obj['name'],
+                    "result": regex_match_command_output(obj['command_vector'],obj['pattern'])
+                })
+            except:
+                logger.error("Error while trying to get regex_match_command_output: %s", urlencode(obj),
+                             exc_info=True)
 
     # Command Outputs Search
     if 'regex_search_command_output' in config:
-        res['regex_search_command_output'] = {}
+        res['regex_search_command_output'] = []
         for obj in config['regex_search_command_output']:
-            res['regex_search_command_output'][obj['name']] = regex_search_command_output(obj['command_vector'],
-                                                                                         obj['pattern'])
+            try:
+                res['regex_search_command_output'].append({
+                    "name": obj['name'],
+                    "result": regex_search_command_output(obj['command_vector'],obj['pattern'])
+                })
+            except:
+                logger.error("Error while trying to get regex_search_command_output: %s", urlencode(obj),
+                             exc_info=True)
 
-    print(json.dumps(res, indent=3))
+    return res
 
 
 if __name__ == "__main__":
@@ -180,9 +219,17 @@ if __name__ == "__main__":
         config_path = sys.argv[1]
     except:
         config_path = None
-    if config_path:
-        with open(config_path) as fin:
-            config = json.load(fin)
-        main(config)
-    else:
-        main()
+
+    res = {}
+    try:
+        if config_path:
+            with open(config_path) as fin:
+                config = json.load(fin)
+            res = main(config)
+        else:
+            res = main()
+    except:
+        logger.error("Error in main", exc_info=True)
+    finally:
+        with open(JSON_OUTPUT, 'w') as fou:
+            json.dump(res, fou)

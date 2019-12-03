@@ -1,5 +1,7 @@
 config.json
 .idea
+monitor.log
+monitor.out
 # ---> Python
 # Byte-compiled / optimized / DLL files
 __pycache__/
