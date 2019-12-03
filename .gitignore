@@ -2,6 +2,11 @@ config.json
 .idea
 monitor.log
 monitor.out
+monitoring.json
+monitoring.log
+monitor.conf.json
+cron.sh
+
 # ---> Python
 # Byte-compiled / optimized / DLL files
 __pycache__/

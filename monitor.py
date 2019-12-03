@@ -213,6 +213,8 @@ def main(config=None):
 
 
 if __name__ == "__main__":
+    import socket
+    logger.info("starting monitoring script on %s", urlencode({'hostname': socket.gethostname()}))
     try:
         import sys
 
@@ -231,5 +233,6 @@ if __name__ == "__main__":
     except:
         logger.error("Error in main", exc_info=True)
     finally:
+        logger.info("dumping monitoring output for %s", urlencode({'hostname': socket.gethostname()}))
         with open(JSON_OUTPUT, 'w') as fou:
             json.dump(res, fou)
