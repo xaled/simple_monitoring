@@ -160,10 +160,10 @@ def main(config=None):
 
     # Directory Sizes:
     if 'dir_size' in config:
-        res['dir_sizes'] = {}
+        res['dir_sizes'] = []
         for dir in config['dir_size']:
             try:
-                res['dir_sizes'][dir] = dir_size(dir)
+                res['dir_sizes'].append({"dir": dir, "size": dir_size(dir)})
             except:
                 logger.error("Error while trying to determine directory size: %s", urlencode({'dir':dir}), exc_info=True)
 
