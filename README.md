@@ -17,7 +17,7 @@ To run the script in the monitored server:
 
     ./monitor.py config.json
 
-This command generate two files: `monitor.log` and `monitor.out`. `monitor.log` contains script execution logs, 
+This command generate two files: `monitor.log` and `monitor.out`. `monitor.log` contains execution logs, 
 and `monitor.out` contains the result of the script.
 
 **Example for script result (indented)**:
