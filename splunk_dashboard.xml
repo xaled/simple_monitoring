@@ -1,0 +1,180 @@
+<dashboard theme="dark">
+  <label>Monitoring</label>
+  <row>
+    <panel>
+      <table>
+        <title>Systems</title>
+        <search>
+          <query>index="simple_monitoring" sourcetype="simple_monitoring_json" 
+| dedup system_info.hostname 
+| eval uptime=case('system_info.uptime'&gt;=86400,round('system_info.uptime'/86400,0)." days", 'system_info.uptime'&gt;=3600,round('system_info.uptime'/3600,0)." hours", 'system_info.uptime'&gt;=60,round('system_info.uptime'/60,0)." minutes",1=1,'system_info.uptime'." seconds"), platform='system_info.platform_name'.'system_info.platform_version', memory_total=case('memory.memory_total'&gt;=(1024*1024*1024*1024),round('memory.memory_total'/(1024*1024*1024*1024),0)."TB", 'memory.memory_total'&gt;=(1024*1024*1024),round('memory.memory_total'/(1024*1024*1024),0)."GB", 'memory.memory_total'&gt;=(1024*1024),round('memory.memory_total'/(1024*1024),0)."MB", 'memory.memory_total'&gt;=1024,round('memory.memory_total'/1024,0)."KB", 1=1,'memory.memory_total'."B")
+|  table system_info.hostname, _time, platform, uptime, memory_total, memory.memory_used_percent</query>
+          <earliest>0</earliest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="number" field="memory.memory_used_percent">
+          <option name="precision">0</option>
+          <option name="unit">%</option>
+          <option name="useThousandSeparators">false</option>
+        </format>
+        <format type="color" field="memory.memory_used_percent">
+          <colorPalette type="list">[#006D9C,#F8BE34,#F1813F,#DC4E41]</colorPalette>
+          <scale type="threshold">50,75,90</scale>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Storage</title>
+        <search>
+          <query>index="simple_monitoring" sourcetype="simple_monitoring_json" 
+| dedup system_info.hostname
+| spath path=drives{} output=x 
+| fields - _raw | fields  x, system_info.hostname | mvexpand x | spath input=x 
+| table system_info.hostname, name, percent_used</query>
+          <earliest>0</earliest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="number" field="percent_used">
+          <option name="precision">0</option>
+          <option name="unit">%</option>
+          <option name="useThousandSeparators">false</option>
+        </format>
+        <format type="color" field="percent_used">
+          <colorPalette type="list">[#006D9C,#F8BE34,#F1813F,#DC4E41]</colorPalette>
+          <scale type="threshold">50,75,90</scale>
+        </format>
+      </table>
+    </panel>
+    <panel>
+      <chart>
+        <title>Storage history</title>
+        <search>
+          <query>index="simple_monitoring" sourcetype="simple_monitoring_json" 
+| spath path=drives{} output=x 
+| fields - _raw | fields  x, system_info.hostname | mvexpand x | spath input=x 
+| eval drive_name='system_info.hostname'.":".name
+| timechart span=1d max(percent_used) by drive_name</query>
+          <earliest>0</earliest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Directory sizes</title>
+        <search>
+          <query>index="simple_monitoring" sourcetype="simple_monitoring_json" 
+| dedup system_info.hostname
+| spath path=dir_sizes{} output=x 
+| fields - _raw | fields  x, system_info.hostname | mvexpand x | spath input=x 
+| eval size_readable=case(size&gt;=(1024*1024*1024*1024),round(size/(1024*1024*1024*1024),0)."TB", size&gt;=(1024*1024*1024),round(size/(1024*1024*1024),0)."GB", size&gt;=(1024*1024),round(size/(1024*1024),0)."MB", size&gt;=1024,round(size/1024,0)."KB", 1=1,size."B")
+| table system_info.hostname, dir, size_readable</query>
+          <earliest>0</earliest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <chart>
+        <title>Directory history</title>
+        <search>
+          <query>index="simple_monitoring" sourcetype="simple_monitoring_json" 
+| spath path=dir_sizes{} output=x 
+| fields - _raw | fields  x, system_info.hostname | mvexpand x | spath input=x 
+| eval dir_name='system_info.hostname'.":".dir
+| timechart span=1d max(size) by dir_name</query>
+          <earliest>0</earliest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+</dashboard>
